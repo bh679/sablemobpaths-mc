@@ -27,6 +27,8 @@ both repos, plus the commit messages on `mmmpipi`'s.
 
 ## Design origin
 
+Villager support follows from vanilla's brain behaviours, which measure from a remembered block to a mob, and Sable's own `EatBlockGoalMixin`, which swaps a carried mob's `blockPosition()` for its plot position. Which scenarios needed to work came from running both mods side by side.
+
 Searching in a sub-level's frame over a merged view of the world and nearby sub-levels follows
 from how Sable's own `PathNavigationMixin` searches one frame, and from which blocks vanilla's
 `WalkNodeEvaluator` reads.

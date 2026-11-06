@@ -24,3 +24,7 @@ check dev.ryanhcode.sable.mixinterface.entity.pathfinding.PathExtension 'sable$s
 javap -p -c -cp "$WORK" dev.ryanhcode.sable.mixin.entity.entity_pathfinding.WalkNodeEvaluatorMixin \
   | grep -F 'getTrackingSubLevel' >/dev/null || { echo "MISSING: WalkNodeEvaluatorMixin no longer reads the tracking sub-level" >&2; exit 1; }
 echo "ok: WalkNodeEvaluatorMixin reads the tracking sub-level"
+# Villagers rely on Sable moving a sleeper to and from a bed in a plot.
+javap -p -cp "$WORK" dev.ryanhcode.sable.mixin.respawn_point.sleeping.LivingEntityMixin \
+  | grep -F 'setPosToBed' >/dev/null || { echo "MISSING: LivingEntityMixin no longer handles beds in plots" >&2; exit 1; }
+echo "ok: LivingEntityMixin handles beds in plots"

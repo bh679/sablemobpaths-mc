@@ -21,6 +21,8 @@ Read [CLEANROOM.md](CLEANROOM.md). **Never open Sable Pathfinder's or `mmmpipi/s
 - A world-to-world search with a sub-level between the two ends (`CrossFrameSearch.inTheWay`) also goes through the merged view, so the mob crosses or rounds it. Out of budget, it falls back to vanilla.
 - `FrameRegion` is the merged view: the frame's block, else the world's, else another sub-level's. Never loads chunks.
 - `PathfindingContextFrameMixin` keeps merged answers out of the level-wide path-type cache.
+- **Villagers:** POIs stay in plot coordinates, and brain code measures to them from world positions. `BrainTickMixin` holds the level for `VillagerFrame`, `VillagerBrainDistanceMixin` wraps the distance calls in each behaviour that measures to a remembered block, and `VillagerBrainPositionMixin` makes POI searches and block scans centre on the carried mob's plot position. Same-sub-level only: a closest-first sort can't mix frames.
+- **Villages and raids:** `ServerLevelVillageMixin` makes `sectionsToVillage` count sub-levels nearby. `RaidCarriageMixin` keeps a raid's world centre on the sub-level, so the rest of the raid code stays vanilla. `RaidOmenPositionMixin` drops the omen's 30-second-old position.
 - `MobPathsMixinPlugin` skips every mixin when `sable_pathfinder` is loaded.
 - Searches are throttled per mob and per tick (`PathRoute`).
 

@@ -29,6 +29,14 @@ class PathRouteTest {
     }
 
     @Test
+    void onlyAPlotAndAWorldPositionAreMixed() {
+        assertTrue(PathRoute.mixedFrames(DECK_A, null));
+        assertTrue(PathRoute.mixedFrames(null, DECK_A));
+        assertFalse(PathRoute.mixedFrames(null, null));
+        assertFalse(PathRoute.mixedFrames(DECK_A, DECK_A));
+    }
+
+    @Test
     void searchesAreThrottledPerMobAndPerTick() {
         assertFalse(PathRoute.searchAllowed(100, 95, 0));
         assertTrue(PathRoute.searchAllowed(100, 90, 0));

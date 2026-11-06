@@ -4,7 +4,7 @@ import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.math.BoundingBox3d;
 import dev.ryanhcode.sable.mixinterface.entity.entity_sublevel_collision.EntityMovementExtension;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import games.brennan.sablemobpaths.mixin.PathTargetAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
@@ -16,7 +16,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** Runs one path search that crosses between the world and sub-levels. */
@@ -111,11 +113,11 @@ public final class CrossFrameSearch {
         BlockPos start = BlockPos.containing(inFrame);
         BlockPos centre = fromAbove ? start.above() : start;
 
-        Set<BlockPos> local = new ObjectOpenHashSet<>();
+        Map<BlockPos, BlockPos> asked = new HashMap<>();
         for (BlockPos target : targets) {
-            local.add(Sable.HELPER.getContaining(level, target) == frame
+            asked.put(Sable.HELPER.getContaining(level, target) == frame
                 ? target
-                : BlockPos.containing(frame.logicalPose().transformPositionInverse(target.getCenter())));
+                : BlockPos.containing(frame.logicalPose().transformPositionInverse(target.getCenter())), target);
         }
 
         FrameRegion region = new FrameRegion(level, centre.offset(-range, -range, -range),
@@ -126,7 +128,12 @@ public final class CrossFrameSearch {
         var lastCarrierId = moving.sable$getLastTrackingSubLevelID();
         moving.sable$setTrackingSubLevel(frame);
         try {
-            return finder.findPath(region, mob, local, maxDistance, reach, visitedMultiplier);
+            Path found = finder.findPath(region, mob, asked.keySet(), maxDistance, reach, visitedMultiplier);
+            // The caller looks up the target it asked for, such as a villager claiming a POI.
+            if (found != null && found.getTarget() != null) {
+                ((PathTargetAccessor) found).sablemobpaths$setTarget(asked.get(found.getTarget()));
+            }
+            return found;
         } finally {
             moving.sable$setTrackingSubLevel(carrier);
             moving.sable$setLastTrackingSubLevelID(lastCarrierId);
