@@ -8,6 +8,8 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.level.pathfinder.PathFinder;
 import net.minecraft.world.phys.Vec3;
@@ -33,6 +35,45 @@ public final class CrossFrameSearch {
             if (frame != null) return frame;
         }
         return null;
+    }
+
+    /**
+     * The sub-level lying between a mob and a world destination, near the height of either end, so
+     * the search can cross it or go round it. A sub-level far overhead doesn't count.
+     */
+    @Nullable
+    public static SubLevel inTheWay(Level level, Mob mob, Set<BlockPos> targets) {
+        Vec3 from = mob.position();
+        for (BlockPos target : targets) {
+            BoundingBox3d corridor = new BoundingBox3d(
+                Math.min(from.x, target.getX()) - 1, Math.min(from.y, target.getY()) - 2, Math.min(from.z, target.getZ()) - 1,
+                Math.max(from.x, target.getX()) + 1, Math.max(from.y, target.getY()) + 2, Math.max(from.z, target.getZ()) + 1);
+            for (SubLevel subLevel : Sable.HELPER.getAllIntersecting(level, corridor)) {
+                if (!subLevel.isRemoved()) return subLevel;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The sub-level with a block at, or just under, the world position {@code target}. Has to be
+     * asked before vanilla scans down from a target that reads as air, which would lose the deck.
+     */
+    @Nullable
+    public static SubLevel standingOn(Level level, BlockPos target) {
+        Vec3 world = target.getCenter();
+        BoundingBox3d probe = new BoundingBox3d(world.x, world.y - 1.0, world.z, world.x, world.y, world.z);
+        for (SubLevel subLevel : Sable.HELPER.getAllIntersecting(level, probe)) {
+            if (subLevel.isRemoved()) continue;
+            BlockPos local = BlockPos.containing(subLevel.logicalPose().transformPositionInverse(world));
+            if (hasBlock(level, local) || hasBlock(level, local.below())) return subLevel;
+        }
+        return null;
+    }
+
+    private static boolean hasBlock(Level level, BlockPos pos) {
+        ChunkAccess chunk = level.getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FULL, false);
+        return chunk != null && !chunk.getBlockState(pos).isAir();
     }
 
     /** Whether a world-coordinate destination sits inside the sub-level carrying the mob. */

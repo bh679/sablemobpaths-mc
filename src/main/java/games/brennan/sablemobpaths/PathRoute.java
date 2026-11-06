@@ -25,5 +25,6 @@ public final class PathRoute {
     }
 
     public static final int MIN_TICKS_BETWEEN_SEARCHES = 10;
-    public static final int MAX_SEARCHES_PER_TICK = 16;
+    /** A burst cap, not the usual limit: the per-mob wait sets the average. Too low and mobs asking on the same tick starve in turn order. */
+    public static final int MAX_SEARCHES_PER_TICK = 64;
 }

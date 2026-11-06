@@ -7,6 +7,8 @@ Sable paths a mob around the one sub-level it or its target is on. This mod hand
 - Needs [Sable](https://modrinth.com/mod/sable) 2.0.5 or newer.
 - Turns itself off if [Sable Pathfinder](https://modrinth.com/mod/sable-pathfinder) is installed.
 - No config, commands or new content.
+- Doesn't cover villager work, sleep, golem or raid logic on sub-levels, or amphibious mobs crossing onto them.
+- Assumes sub-levels stay level: paths on a tilted one are approximate.
 
 Check `latest.log` for `[SableMobPaths]` to see whether it is active.
 

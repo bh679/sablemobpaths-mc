@@ -57,7 +57,12 @@ public abstract class PathNavigationCrossFrameMixin {
         SubLevel carrier = Sable.HELPER.getTrackingSubLevel(mob);
         SubLevel frame = CrossFrameSearch.destinationFrame(level, targets);
         boolean inside = frame == null && CrossFrameSearch.insideMobFrame(carrier, targets);
-        if (!PathRoute.crossesFrames(carrier, frame, inside)) return;
+        SubLevel inTheWay = null;
+        if (!PathRoute.crossesFrames(carrier, frame, inside)) {
+            if (carrier != null || frame != null) return;
+            inTheWay = CrossFrameSearch.inTheWay(level, mob, targets);
+            if (inTheWay == null) return;
+        }
 
         if (!canUpdatePath()) {
             cir.setReturnValue(null);
@@ -69,12 +74,13 @@ public abstract class PathNavigationCrossFrameMixin {
         }
         long now = level.getGameTime();
         if (!CrossFrameSearch.trySpend(now, sablemobpaths$lastSearch)) {
-            cir.setReturnValue(path != null && !path.isDone() ? path : null);
+            // World to world still has vanilla's answer; only a true crossing has to wait.
+            if (inTheWay == null) cir.setReturnValue(path != null && !path.isDone() ? path : null);
             return;
         }
         sablemobpaths$lastSearch = now;
 
-        SubLevel searchFrame = frame != null ? frame : carrier;
+        SubLevel searchFrame = frame != null ? frame : carrier != null ? carrier : inTheWay;
         Path found = CrossFrameSearch.search(level, mob, pathFinder, targets, searchFrame, fromAbove,
             (int) (maxDistance + range), maxDistance, reach, maxVisitedNodesMultiplier);
         if (found != null && found.getTarget() != null) {

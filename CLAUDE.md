@@ -17,6 +17,8 @@ Read [CLEANROOM.md](CLEANROOM.md). **Never open Sable Pathfinder's or `mmmpipi/s
 
 - `PathNavigationCrossFrameMixin` runs ahead of Sable's hook on `createPath` and takes only searches that change frame (`PathRoute`). Same-frame searches stay with Sable or vanilla.
 - `CrossFrameSearch` searches in the destination's sub-level frame, else the mob's carrier's, so the stretch that matters stays put as it moves. It points the mob's tracking sub-level at that frame for the search, because Sable's start-node hooks read the mob through it.
+- `GroundPathNavigationWorldTargetMixin` turns a world target on a deck into plot coordinates before vanilla scans down to the ground under it.
+- A world-to-world search with a sub-level between the two ends (`CrossFrameSearch.inTheWay`) also goes through the merged view, so the mob crosses or rounds it. Out of budget, it falls back to vanilla.
 - `FrameRegion` is the merged view: the frame's block, else the world's, else another sub-level's. Never loads chunks.
 - `PathfindingContextFrameMixin` keeps merged answers out of the level-wide path-type cache.
 - `MobPathsMixinPlugin` skips every mixin when `sable_pathfinder` is loaded.

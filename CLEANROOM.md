@@ -16,7 +16,7 @@ by B34tingH34rt. That mod is All Rights Reserved, and none of its code is here.
 |---|---|
 | Sable's source (PolyForm Shield 1.0.0) | How sub-level poses, plots and its existing pathing work |
 | Minecraft and NeoForge | The pathing classes being hooked |
-| Sable Pathfinder's public Modrinth description | Which behaviours players expect |
+| Sable Pathfinder's public Modrinth description and changelogs | Which behaviours players expect |
 | Black-box timings of mobs in-game | Measuring the gap and checking parity |
 
 A short functional description of Sable Pathfinder also sits in Dungeon Train's source
