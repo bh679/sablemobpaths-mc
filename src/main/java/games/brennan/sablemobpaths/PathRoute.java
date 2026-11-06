@@ -19,6 +19,11 @@ public final class PathRoute {
         return destFrame != null || !destInsideMobFrame;
     }
 
+    /** Whether exactly one of two positions is on a sub-level, so comparing them needs a conversion. */
+    public static boolean mixedFrames(@Nullable Object frameA, @Nullable Object frameB) {
+        return (frameA == null) != (frameB == null);
+    }
+
     /** Earliest game time a mob may run another cross-frame search after one at {@code last}. */
     public static boolean searchAllowed(long now, long last, int searchesThisTick) {
         return now - last >= MIN_TICKS_BETWEEN_SEARCHES && searchesThisTick < MAX_SEARCHES_PER_TICK;
