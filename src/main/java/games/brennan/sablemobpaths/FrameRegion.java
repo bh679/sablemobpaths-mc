@@ -77,6 +77,11 @@ public final class FrameRegion extends PathNavigationRegion {
         return EMPTY;
     }
 
+    /** Whether the block under a cell is one of the frame's own, so standing there is aboard. */
+    public boolean aboard(int x, int y, int z) {
+        return !read(x, y - 1, z).isAir();
+    }
+
     private BlockState read(int x, int y, int z) {
         ChunkAccess chunk = level.getChunk(x >> 4, z >> 4, ChunkStatus.FULL, false);
         return chunk == null ? EMPTY : chunk.getBlockState(new BlockPos(x, y, z));

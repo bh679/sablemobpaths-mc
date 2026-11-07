@@ -2,16 +2,20 @@ package games.brennan.sablemobpaths;
 
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.math.BoundingBox3d;
+import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.mixinterface.entity.entity_sublevel_collision.EntityMovementExtension;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.sablemobpaths.mixin.PathTargetAccessor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.level.pathfinder.PathFinder;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,17 +45,24 @@ public final class CrossFrameSearch {
 
     /**
      * The sub-level lying between a mob and a world destination, near the height of either end, so
-     * the search can cross it or go round it. A sub-level far overhead doesn't count.
+     * the search can cross it or go round it. A sub-level far overhead doesn't count, nor one the mob
+     * is only stepping off: the line from just past the mob's own reach has to meet it.
      */
     @Nullable
     public static SubLevel inTheWay(Level level, Mob mob, Set<BlockPos> targets) {
         Vec3 from = mob.position();
         for (BlockPos target : targets) {
+            Vec3 to = Vec3.atBottomCenterOf(target);
             BoundingBox3d corridor = new BoundingBox3d(
-                Math.min(from.x, target.getX()) - 1, Math.min(from.y, target.getY()) - 2, Math.min(from.z, target.getZ()) - 1,
-                Math.max(from.x, target.getX()) + 1, Math.max(from.y, target.getY()) + 2, Math.max(from.z, target.getZ()) + 1);
+                Math.min(from.x, to.x) - 1, Math.min(from.y, to.y) - 2, Math.min(from.z, to.z) - 1,
+                Math.max(from.x, to.x) + 1, Math.max(from.y, to.y) + 2, Math.max(from.z, to.z) + 1);
+            double length = from.distanceTo(to);
+            Vec3 past = length <= mob.getBbWidth() ? to : from.lerp(to, (mob.getBbWidth() / 2 + 0.5) / length);
             for (SubLevel subLevel : Sable.HELPER.getAllIntersecting(level, corridor)) {
-                if (!subLevel.isRemoved()) return subLevel;
+                if (subLevel.isRemoved()) continue;
+                BoundingBox3dc b = subLevel.boundingBox();
+                AABB box = new AABB(b.minX(), b.minY() - 2, b.minZ(), b.maxX(), b.maxY() + 2, b.maxZ());
+                if (box.contains(past) || box.clip(past, to).isPresent()) return subLevel;
             }
         }
         return null;
@@ -129,6 +140,7 @@ public final class CrossFrameSearch {
         moving.sable$setTrackingSubLevel(frame);
         try {
             Path found = finder.findPath(region, mob, asked.keySet(), maxDistance, reach, visitedMultiplier);
+            if (found != null && carrier == null) found = boardFirst(region, mob, frame, found);
             // The caller looks up the target it asked for, such as a villager claiming a POI.
             if (found != null && found.getTarget() != null) {
                 ((PathTargetAccessor) found).sablemobpaths$setTarget(asked.get(found.getTarget()));
@@ -138,6 +150,44 @@ public final class CrossFrameSearch {
             moving.sable$setTrackingSubLevel(carrier);
             moving.sable$setLastTrackingSubLevelID(lastCarrierId);
         }
+    }
+
+    /**
+     * A path searched in a moving frame for a mob still on the ground. Its nodes ride with the frame,
+     * so the stretch on the ground slides away as the mob walks it, and a route that heads along the
+     * frame's travel there barely gains on it. Leads the mob straight across onto the deck first.
+     */
+    private static Path boardFirst(FrameRegion region, Mob mob, SubLevel frame, Path found) {
+        Vec3 world = mob.position();
+        Vec3 drift = frame.logicalPose().transformPositionInverse(world)
+            .subtract(frame.lastPose().transformPositionInverse(world));
+        if (drift.horizontalDistance() < PathRoute.MIN_DRIFT_PER_TICK) return found;
+
+        int boarding = -1;
+        for (int i = 1; i < found.getNodeCount(); i++) {
+            Node node = found.getNode(i);
+            if (region.aboard(node.x, node.y, node.z)) {
+                boarding = i;
+                break;
+            }
+        }
+        if (boarding < 2) return found;
+
+        Node start = found.getNode(0);
+        Node aboard = found.getNode(boarding);
+        EntityDimensions size = mob.getType().getDimensions();
+        List<int[]> leg = PathRoute.boardingLeg(new int[] {start.x, start.y, start.z},
+            new int[] {aboard.x, aboard.y, aboard.z}, Math.abs(drift.x) >= Math.abs(drift.z),
+            (x, y, z) -> region.noCollision(mob, size.makeBoundingBox(x + 0.5, y, z + 0.5).deflate(1.0E-3))
+                && !region.getBlockState(new BlockPos(x, y - 1, z)).getCollisionShape(region, new BlockPos(x, y - 1, z)).isEmpty(),
+            region::aboard);
+        if (leg == null) return found;
+
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(start);
+        for (int[] cell : leg) nodes.add(start.cloneAndMove(cell[0], cell[1], cell[2]));
+        for (int i = boarding; i < found.getNodeCount(); i++) nodes.add(found.getNode(i));
+        return new Path(nodes, found.getTarget(), found.canReach());
     }
 
     private static List<SubLevel> nearbyExcept(Level level, Mob mob, int range, @Nullable SubLevel frame) {

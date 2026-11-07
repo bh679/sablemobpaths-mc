@@ -49,6 +49,7 @@ public abstract class PathNavigationCrossFrameMixin {
     @Unique @Nullable private SubLevel sablemobpaths$lastCarrier;
     @Unique @Nullable private BlockPos sablemobpaths$lastAsked;
     @Unique private boolean sablemobpaths$repathPending;
+    @Unique @Nullable private Path sablemobpaths$framePath;
 
     @Inject(method = "createPath(Ljava/util/Set;IZIF)Lnet/minecraft/world/level/pathfinder/Path;",
         at = @At("HEAD"), cancellable = true)
@@ -74,7 +75,18 @@ public abstract class PathNavigationCrossFrameMixin {
                 return;
             }
             inTheWay = CrossFrameSearch.inTheWay(level, mob, targets);
-            if (inTheWay == null) return;
+            if (inTheWay == null) {
+                // A path laid in a sub-level's frame rides away with it, and vanilla keeps handing it
+                // back while the target matches. A mob stepped off onto still ground needs a still path.
+                long now = level.getGameTime();
+                if (path != null && path == sablemobpaths$framePath
+                    && CrossFrameSearch.trySpend(now, sablemobpaths$lastSearch, false)) {
+                    sablemobpaths$lastSearch = now;
+                    sablemobpaths$framePath = null;
+                    targetPos = null;
+                }
+                return;
+            }
         }
 
         if (!canUpdatePath()) {
@@ -106,6 +118,7 @@ public abstract class PathNavigationCrossFrameMixin {
             reachRange = reach;
             resetStuckTimeout();
             ((PathExtension) (Object) found).sable$setLocalPath(level, true);
+            sablemobpaths$framePath = found;
         }
         cir.setReturnValue(found);
     }

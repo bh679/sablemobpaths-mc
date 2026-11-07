@@ -17,6 +17,31 @@ class PathRouteTest {
     }
 
     @Test
+    void boardingLegStepsAcrossTravelUntilAboard() {
+        // Frame drifts along x; deck is z <= 6, mob stands at z = 9 and the search boards at x = 12.
+        var leg = PathRoute.boardingLeg(new int[] {4, 0, 9}, new int[] {12, 0, 6}, true,
+            (x, y, z) -> y == 0, (x, y, z) -> z <= 6);
+        assertTrue(leg != null && leg.size() == 3);
+        for (int[] cell : leg) assertTrue(cell[0] == 4);
+        assertTrue(leg.get(2)[2] == 6);
+    }
+
+    @Test
+    void boardingLegClimbsOneStepOntoAHigherDeck() {
+        var leg = PathRoute.boardingLeg(new int[] {0, 0, 3}, new int[] {5, 1, 1}, true,
+            (x, y, z) -> y == (z <= 1 ? 1 : 0), (x, y, z) -> z <= 1);
+        assertTrue(leg != null && leg.get(leg.size() - 1)[1] == 1);
+    }
+
+    @Test
+    void boardingLegGivesUpWhenBlockedOrAlreadyLevel() {
+        assertTrue(PathRoute.boardingLeg(new int[] {0, 0, 9}, new int[] {5, 0, 6}, true,
+            (x, y, z) -> z != 8, (x, y, z) -> z <= 6) == null);
+        assertTrue(PathRoute.boardingLeg(new int[] {0, 0, 6}, new int[] {5, 0, 6}, true,
+            (x, y, z) -> true, (x, y, z) -> true) == null);
+    }
+
+    @Test
     void changingFrameIsOurs() {
         assertTrue(PathRoute.crossesFrames(null, DECK_A, false));
         assertTrue(PathRoute.crossesFrames(DECK_A, null, false));
