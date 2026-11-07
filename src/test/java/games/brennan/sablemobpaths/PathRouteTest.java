@@ -38,8 +38,27 @@ class PathRouteTest {
 
     @Test
     void searchesAreThrottledPerMobAndPerTick() {
-        assertFalse(PathRoute.searchAllowed(100, 95, 0));
-        assertTrue(PathRoute.searchAllowed(100, 90, 0));
-        assertFalse(PathRoute.searchAllowed(100, 90, PathRoute.MAX_SEARCHES_PER_TICK));
+        assertFalse(PathRoute.searchAllowed(100, 95, 0, false));
+        assertTrue(PathRoute.searchAllowed(100, 90, 0, false));
+        assertFalse(PathRoute.searchAllowed(100, 90, PathRoute.MAX_SEARCHES_PER_TICK, false));
+    }
+
+    @Test
+    void aNewDestinationWaitsLessButStaysCapped() {
+        assertFalse(PathRoute.searchAllowed(100, 99, 0, true));
+        assertTrue(PathRoute.searchAllowed(100, 95, 0, true));
+        assertFalse(PathRoute.searchAllowed(100, 95, PathRoute.MAX_SEARCHES_PER_TICK, true));
+    }
+
+    @Test
+    void aPathIsRenewedOnlyAfterItHasBeenWalkedAWhile() {
+        assertFalse(PathRoute.pathDueForRenewal(100, 100 - PathRoute.TICKS_BETWEEN_PATH_RENEWALS + 1));
+        assertTrue(PathRoute.pathDueForRenewal(100, 100 - PathRoute.TICKS_BETWEEN_PATH_RENEWALS));
+    }
+
+    @Test
+    void aDriftingDestinationIsNotANewOne() {
+        assertFalse(PathRoute.isNewTarget(PathRoute.NEW_TARGET_DISTANCE * PathRoute.NEW_TARGET_DISTANCE));
+        assertTrue(PathRoute.isNewTarget(PathRoute.NEW_TARGET_DISTANCE * PathRoute.NEW_TARGET_DISTANCE + 1));
     }
 }

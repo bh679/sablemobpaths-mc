@@ -24,12 +24,30 @@ public final class PathRoute {
         return (frameA == null) != (frameB == null);
     }
 
-    /** Earliest game time a mob may run another cross-frame search after one at {@code last}. */
-    public static boolean searchAllowed(long now, long last, int searchesThisTick) {
-        return now - last >= MIN_TICKS_BETWEEN_SEARCHES && searchesThisTick < MAX_SEARCHES_PER_TICK;
+    /**
+     * Earliest game time a mob may run another cross-frame search after one at {@code last}. A mob
+     * following something that moves waits the full gap; one sent somewhere new shouldn't stand idle.
+     */
+    public static boolean searchAllowed(long now, long last, int searchesThisTick, boolean newTarget) {
+        long wait = newTarget ? MIN_TICKS_AFTER_NEW_TARGET : MIN_TICKS_BETWEEN_SEARCHES;
+        return now - last >= wait && searchesThisTick < MAX_SEARCHES_PER_TICK;
+    }
+
+    /** Whether a destination is far enough from the last one asked for to be a new errand, not the same one drifting. */
+    public static boolean isNewTarget(double squaredDistanceFromLast) {
+        return squaredDistanceFromLast > NEW_TARGET_DISTANCE * NEW_TARGET_DISTANCE;
+    }
+
+    /** Whether a mob still walking a path has had it long enough to deserve a fresh search when it next asks. */
+    public static boolean pathDueForRenewal(long now, long last) {
+        return now - last >= TICKS_BETWEEN_PATH_RENEWALS;
     }
 
     public static final int MIN_TICKS_BETWEEN_SEARCHES = 10;
+    public static final int TICKS_BETWEEN_PATH_RENEWALS = 20;
+    public static final int MIN_TICKS_AFTER_NEW_TARGET = 2;
+    /** Wider than a moving train carries a target between two searches, up to about 16 blocks/s. */
+    public static final int NEW_TARGET_DISTANCE = 8;
     /** A burst cap, not the usual limit: the per-mob wait sets the average. Too low and mobs asking on the same tick starve in turn order. */
     public static final int MAX_SEARCHES_PER_TICK = 64;
 }
