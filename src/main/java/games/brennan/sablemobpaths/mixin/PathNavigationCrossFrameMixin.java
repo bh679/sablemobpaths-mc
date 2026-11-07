@@ -43,10 +43,12 @@ public abstract class PathNavigationCrossFrameMixin {
 
     @Shadow protected abstract boolean canUpdatePath();
     @Shadow protected abstract void resetStuckTimeout();
-    @Shadow public abstract void recomputePath();
+    @Shadow @Nullable public abstract Path createPath(BlockPos pos, int accuracy);
 
     @Unique private long sablemobpaths$lastSearch = Long.MIN_VALUE / 2;
     @Unique @Nullable private SubLevel sablemobpaths$lastCarrier;
+    @Unique @Nullable private BlockPos sablemobpaths$lastAsked;
+    @Unique private boolean sablemobpaths$repathPending;
 
     @Inject(method = "createPath(Ljava/util/Set;IZIF)Lnet/minecraft/world/level/pathfinder/Path;",
         at = @At("HEAD"), cancellable = true)
@@ -59,7 +61,18 @@ public abstract class PathNavigationCrossFrameMixin {
         boolean inside = frame == null && CrossFrameSearch.insideMobFrame(carrier, targets);
         SubLevel inTheWay = null;
         if (!PathRoute.crossesFrames(carrier, frame, inside)) {
-            if (carrier != null || frame != null) return;
+            if (carrier != null || frame != null) {
+                // Vanilla and Sable hand back the path in hand while targetPos matches, and on a deck it
+                // stays matched. Forgetting it lets them search; the mob keeps walking until the answer
+                // is adopted, and a caller only asking for a route costs it nothing.
+                long sameFrameNow = level.getGameTime();
+                if (sablemobpaths$pathDueForRenewal(sameFrameNow)
+                    && CrossFrameSearch.trySpend(sameFrameNow, sablemobpaths$lastSearch, false)) {
+                    sablemobpaths$lastSearch = sameFrameNow;
+                    targetPos = null;
+                }
+                return;
+            }
             inTheWay = CrossFrameSearch.inTheWay(level, mob, targets);
             if (inTheWay == null) return;
         }
@@ -68,17 +81,21 @@ public abstract class PathNavigationCrossFrameMixin {
             cir.setReturnValue(null);
             return;
         }
-        if (path != null && !path.isDone() && targets.contains(targetPos)) {
+        long now = level.getGameTime();
+        if (path != null && !path.isDone() && targets.contains(targetPos) && !sablemobpaths$pathDueForRenewal(now)) {
             cir.setReturnValue(path);
             return;
         }
-        long now = level.getGameTime();
-        if (!CrossFrameSearch.trySpend(now, sablemobpaths$lastSearch)) {
+        BlockPos asked = targets.iterator().next();
+        boolean newTarget = sablemobpaths$lastAsked == null
+            || PathRoute.isNewTarget(asked.distSqr(sablemobpaths$lastAsked));
+        if (!CrossFrameSearch.trySpend(now, sablemobpaths$lastSearch, newTarget)) {
             // World to world still has vanilla's answer; only a true crossing has to wait.
             if (inTheWay == null) cir.setReturnValue(path != null && !path.isDone() ? path : null);
             return;
         }
         sablemobpaths$lastSearch = now;
+        sablemobpaths$lastAsked = asked;
 
         SubLevel searchFrame = frame != null ? frame : carrier != null ? carrier : inTheWay;
         Path found = CrossFrameSearch.search(level, mob, pathFinder, targets, searchFrame, fromAbove,
@@ -93,13 +110,35 @@ public abstract class PathNavigationCrossFrameMixin {
         cir.setReturnValue(found);
     }
 
-    /** Stepping onto or off a sub-level changes which search applies, so ask again. */
+    /** A crowd shoves mobs off a path long before it ends, so a mob still asking gets a fresh one now and then. */
+    @Unique
+    private boolean sablemobpaths$pathDueForRenewal(long now) {
+        return path != null && !path.isDone() && PathRoute.pathDueForRenewal(now, sablemobpaths$lastSearch);
+    }
+
+    /**
+     * Stepping onto or off a sub-level changes which search applies, so ask again. The mob keeps
+     * walking its current path until a new one is found: the crossing path still leads across, and
+     * dropping it would stand the mob still in the gap.
+     */
     @Inject(method = "tick", at = @At("HEAD"))
     private void sablemobpaths$repathOnCarrierChange(CallbackInfo ci) {
         if (level.isClientSide) return;
         SubLevel carrier = Sable.HELPER.getTrackingSubLevel(mob);
-        if (carrier == sablemobpaths$lastCarrier) return;
-        sablemobpaths$lastCarrier = carrier;
-        if (path != null && !path.isDone() && targetPos != null) recomputePath();
+        if (carrier != sablemobpaths$lastCarrier) {
+            sablemobpaths$lastCarrier = carrier;
+            sablemobpaths$repathPending = true;
+        }
+        if (!sablemobpaths$repathPending) return;
+        if (path == null || path.isDone() || targetPos == null) {
+            sablemobpaths$repathPending = false;
+            return;
+        }
+        if (level.getGameTime() - sablemobpaths$lastSearch < PathRoute.MIN_TICKS_BETWEEN_SEARCHES) return;
+        sablemobpaths$repathPending = false;
+        Path current = path;
+        path = null;
+        Path found = createPath(targetPos, reachRange);
+        path = found != null ? found : current;
     }
 }

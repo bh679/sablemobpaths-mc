@@ -89,12 +89,12 @@ public final class CrossFrameSearch {
     }
 
     /** Spends one search from this tick's budget if {@code last} allows it. */
-    public static boolean trySpend(long now, long last) {
+    public static boolean trySpend(long now, long last, boolean newTarget) {
         if (now != budgetTick) {
             budgetTick = now;
             spentThisTick = 0;
         }
-        if (!PathRoute.searchAllowed(now, last, spentThisTick)) return false;
+        if (!PathRoute.searchAllowed(now, last, spentThisTick, newTarget)) return false;
         spentThisTick++;
         return true;
     }
