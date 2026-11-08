@@ -1,0 +1,45 @@
+{
+  "slug": "sable-mob-paths",
+  "title": "Sable Mob Paths",
+  "summary": "Mobs walk onto, off and between Sable ships and trains, and villagers live and work on them.",
+  "categories": [
+    "mobs",
+    "utility"
+  ],
+  "license_id": "LicenseRef-PolyForm-Shield-1.0.0",
+  "license_url": "https://polyformproject.org/licenses/shield/1.0.0",
+  "source_url": "https://github.com/bh679/sablemobpaths-mc",
+  "issues_url": "https://dungeon.training/issues#sablemobpaths",
+  "discord_url": "https://discord.gg/hnj5G7duHU",
+  "icon": "icon.png",
+  "screenshots": [
+    {
+      "file": "screenshots/01-train-crossing-before.png",
+      "title": "Carriage to carriage",
+      "description": "Illagers on one carriage of a Dungeon Train spot a villager on the next.",
+      "featured": true,
+      "live_url": "https://cdn.modrinth.com/data/keiVL8IW/images/82571345290dac67e213e4fe75e8a58b89d4c6a0_350.webp"
+    },
+    {
+      "file": "screenshots/02-train-crossing-after.png",
+      "title": "Across the gap",
+      "description": "A moment later they have crossed onto the next carriage.",
+      "featured": false,
+      "live_url": "https://cdn.modrinth.com/data/keiVL8IW/images/239c2ff184bf1af01d0fdc0190b73df647bac08f_350.webp"
+    },
+    {
+      "file": "screenshots/03-ship-boarding.png",
+      "title": "Boarding a ship",
+      "description": "Illagers walk up a dock and onto a Sable ship to reach the villagers on deck.",
+      "featured": false,
+      "live_url": "https://cdn.modrinth.com/data/keiVL8IW/images/6b3682566028677338dc8006e3530e55902b5880_350.webp"
+    },
+    {
+      "file": "screenshots/04-ship-villagers.png",
+      "title": "Villagers at work on deck",
+      "description": "A farmer, librarian and fisherman use the job sites on the ship they live on.",
+      "featured": false,
+      "live_url": "https://cdn.modrinth.com/data/keiVL8IW/images/07836d163c67333f6a98f8fc515200e9dde4bb94_350.webp"
+    }
+  ]
+}

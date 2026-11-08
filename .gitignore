@@ -45,7 +45,7 @@ __pycache__/
 
 
 # Store copy for Modrinth / CurseForge (edited by hand, not shipped)
-LISTING.md
+/LISTING.md
 
 # Local API tokens (never committed)
 .secrets/
