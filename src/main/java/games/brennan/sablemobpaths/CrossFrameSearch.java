@@ -158,6 +158,8 @@ public final class CrossFrameSearch {
      * frame's travel there barely gains on it. Leads the mob straight across onto the deck first.
      */
     private static Path boardFirst(FrameRegion region, Mob mob, SubLevel frame, Path found) {
+        // Only from the world's own ground: a mob between two carriages or on another one is crossing, not boarding.
+        if (!mob.onGround() || mob.level().getBlockState(BlockPos.containing(mob.getX(), mob.getY() - 0.2, mob.getZ())).isAir()) return found;
         Vec3 world = mob.position();
         Vec3 drift = frame.logicalPose().transformPositionInverse(world)
             .subtract(frame.lastPose().transformPositionInverse(world));
