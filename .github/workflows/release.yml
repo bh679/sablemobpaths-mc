@@ -139,24 +139,25 @@ jobs:
           dependencies: |
             sable(required){modrinth:sable}{curseforge:sable}
 
-      - name: Set Modrinth side metadata (both required)
-        if: steps.publish_check.outputs.modrinth == 'true'
+      - name: Set Modrinth side metadata (server required, client optional)
+        if: steps.publish_check.outputs.modrinth == 'true' && steps.publish_neoforge.outputs.modrinth-version != ''
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          MODRINTH_VERSION_ID: ${{ steps.publish_neoforge.outputs.modrinth-version }}
         run: |
-          # The jar carries mixins for common classes, so list both sides. mc-publish
-          # cannot set these; re-assert each release so they don't drift.
+          # All the mod's work is server logic: no client mixins, registries or packets,
+          # so players joining a server don't need it. Modrinth takes the project's sides
+          # from its versions, and mc-publish cannot set them, so set each new version's.
           HTTP_CODE=$(curl -sS -o /tmp/modrinth_env.out -w "%{http_code}" \
-            -X PATCH "https://api.modrinth.com/v2/project/${MODRINTH_PROJECT_ID}" \
+            -X PATCH "https://api.modrinth.com/v3/version/${MODRINTH_VERSION_ID}" \
             -H "Authorization: ${MODRINTH_TOKEN}" \
             -H "User-Agent: bh679/sablemobpaths-mc (release CI)" \
             -H "Content-Type: application/json" \
-            -d '{"client_side":"required","server_side":"required"}')
-          echo "Modrinth PATCH /project responded ${HTTP_CODE}"
+            -d '{"environment":"server_only_client_optional"}')
+          echo "Modrinth PATCH /version responded ${HTTP_CODE}"
           if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
             cat /tmp/modrinth_env.out || true
-            echo "::warning::Could not update Modrinth side metadata (HTTP ${HTTP_CODE}) — set it manually in project settings."
+            echo "::warning::Could not update Modrinth side metadata (HTTP ${HTTP_CODE}) — set it manually in the version settings."
           fi
 
       - name: Check Discord webhook prerequisites
