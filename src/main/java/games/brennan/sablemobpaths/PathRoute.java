@@ -24,6 +24,22 @@ public final class PathRoute {
         return (frameA == null) != (frameB == null);
     }
 
+    /** How a position reaches a search frame, given the sub-level whose plot holds it. */
+    public enum FrameStep { AS_IS, VIA_WORLD, FROM_WORLD }
+
+    /**
+     * A plot position is already in its own frame, and one in another plot has to go out to the world
+     * first. Only a world position takes the plain inverse; giving it a plot position lands twice as
+     * far out, past the world's edge, where loading a chunk crashes the server.
+     *
+     * @param posFrame sub-level whose plot holds the position, or {@code null} for the world
+     * @param frame    sub-level the search runs in
+     */
+    public static FrameStep frameStep(@Nullable Object posFrame, Object frame) {
+        if (posFrame == frame) return FrameStep.AS_IS;
+        return posFrame != null ? FrameStep.VIA_WORLD : FrameStep.FROM_WORLD;
+    }
+
     /**
      * Earliest game time a mob may run another cross-frame search after one at {@code last}. A mob
      * following something that moves waits the full gap; one sent somewhere new shouldn't stand idle.

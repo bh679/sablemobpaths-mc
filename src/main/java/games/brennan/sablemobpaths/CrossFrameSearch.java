@@ -109,7 +109,7 @@ public final class CrossFrameSearch {
     public static Path search(Level level, Mob mob, PathFinder finder, Set<BlockPos> targets,
                               SubLevel frame, boolean fromAbove, int range, float maxDistance,
                               int reach, float visitedMultiplier) {
-        Vec3 inFrame = frame.logicalPose().transformPositionInverse(mob.position());
+        Vec3 inFrame = toFrame(level, frame, mob.position());
         BlockPos start = BlockPos.containing(inFrame);
         BlockPos centre = fromAbove ? start.above() : start;
 
@@ -117,7 +117,7 @@ public final class CrossFrameSearch {
         for (BlockPos target : targets) {
             asked.put(Sable.HELPER.getContaining(level, target) == frame
                 ? target
-                : BlockPos.containing(frame.logicalPose().transformPositionInverse(target.getCenter())), target);
+                : BlockPos.containing(toFrame(level, frame, target.getCenter())), target);
         }
 
         FrameRegion region = new FrameRegion(level, centre.offset(-range, -range, -range),
@@ -138,6 +138,16 @@ public final class CrossFrameSearch {
             moving.sable$setTrackingSubLevel(carrier);
             moving.sable$setLastTrackingSubLevelID(lastCarrierId);
         }
+    }
+
+    /** {@code pos} in {@code frame}'s plot coordinates, wherever it is now: see {@link PathRoute#frameStep}. */
+    public static Vec3 toFrame(Level level, SubLevel frame, Vec3 pos) {
+        SubLevel holder = Sable.HELPER.getContaining(level, pos);
+        return switch (PathRoute.frameStep(holder, frame)) {
+            case AS_IS -> pos;
+            case VIA_WORLD -> frame.logicalPose().transformPositionInverse(holder.logicalPose().transformPosition(pos));
+            case FROM_WORLD -> frame.logicalPose().transformPositionInverse(pos);
+        };
     }
 
     private static List<SubLevel> nearbyExcept(Level level, Mob mob, int range, @Nullable SubLevel frame) {

@@ -46,7 +46,7 @@ public final class VillagerFrame {
         SubLevel carrier = Sable.HELPER.getTrackingSubLevel(subject);
         if (carrier == null) return world;
         Vec3 at = world.equals(subject.blockPosition()) ? subject.position() : world.getCenter();
-        return BlockPos.containing(carrier.logicalPose().transformPositionInverse(at));
+        return BlockPos.containing(CrossFrameSearch.toFrame(level, carrier, at));
     }
 
     /** {@code pos} as seen from {@code other}: unchanged unless pos is the world end of a mixed pair. */
