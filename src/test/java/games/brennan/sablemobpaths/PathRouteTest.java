@@ -2,6 +2,7 @@ package games.brennan.sablemobpaths;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,6 +35,21 @@ class PathRouteTest {
         assertTrue(PathRoute.mixedFrames(null, DECK_A));
         assertFalse(PathRoute.mixedFrames(null, null));
         assertFalse(PathRoute.mixedFrames(DECK_A, DECK_A));
+    }
+
+    @Test
+    void aPositionAlreadyInTheSearchFrameIsNotConvertedAgain() {
+        assertEquals(PathRoute.FrameStep.AS_IS, PathRoute.frameStep(DECK_A, DECK_A));
+    }
+
+    @Test
+    void aPositionInAnotherPlotGoesOutToTheWorldFirst() {
+        assertEquals(PathRoute.FrameStep.VIA_WORLD, PathRoute.frameStep(DECK_B, DECK_A));
+    }
+
+    @Test
+    void onlyAWorldPositionTakesThePlainInverse() {
+        assertEquals(PathRoute.FrameStep.FROM_WORLD, PathRoute.frameStep(null, DECK_A));
     }
 
     @Test
