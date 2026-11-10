@@ -29,6 +29,16 @@ public final class CrossFrameSearch {
 
     private CrossFrameSearch() {}
 
+    /**
+     * The sub-level a mob moves with: the one whose plot it stands in (a carriage room's own mobs live
+     * at plot coordinates), else the one it rides from the world.
+     */
+    @Nullable
+    public static SubLevel carrierOf(Level level, Mob mob) {
+        SubLevel inside = Sable.HELPER.getContaining(level, mob.position());
+        return inside != null ? inside : Sable.HELPER.getTrackingSubLevel(mob);
+    }
+
     /** The first sub-level whose plot holds one of {@code targets}, else {@code null} for the world. */
     @Nullable
     public static SubLevel destinationFrame(Level level, Set<BlockPos> targets) {

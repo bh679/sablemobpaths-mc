@@ -56,7 +56,7 @@ public abstract class PathNavigationCrossFrameMixin {
                                           float maxDistance, CallbackInfoReturnable<Path> cir) {
         if (level.isClientSide || targets.isEmpty() || !(nodeEvaluator instanceof WalkNodeEvaluator)) return;
 
-        SubLevel carrier = Sable.HELPER.getTrackingSubLevel(mob);
+        SubLevel carrier = CrossFrameSearch.carrierOf(level, mob);
         SubLevel frame = CrossFrameSearch.destinationFrame(level, targets);
         boolean inside = frame == null && CrossFrameSearch.insideMobFrame(carrier, targets);
         SubLevel inTheWay = null;
@@ -124,7 +124,7 @@ public abstract class PathNavigationCrossFrameMixin {
     @Inject(method = "tick", at = @At("HEAD"))
     private void sablemobpaths$repathOnCarrierChange(CallbackInfo ci) {
         if (level.isClientSide) return;
-        SubLevel carrier = Sable.HELPER.getTrackingSubLevel(mob);
+        SubLevel carrier = CrossFrameSearch.carrierOf(level, mob);
         if (carrier != sablemobpaths$lastCarrier) {
             sablemobpaths$lastCarrier = carrier;
             sablemobpaths$repathPending = true;
